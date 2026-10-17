@@ -1,0 +1,14 @@
+.git
+.gitignore
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+.env
+.env.*
+coverage/
+tmp/
+temp/

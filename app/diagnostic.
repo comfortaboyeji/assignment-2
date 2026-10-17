@@ -1,0 +1,122 @@
+#!/bin/sh
+
+stem          Display Linux system information
+  network <host>  Check whether a host is reachable
+  disk            Display disk usage information
+  help            Display this help message
+
+Exit codes:
+  0  Success
+  1  Operational/runtime failure
+  2  Invalid command or input
+EOF
+}
+
+system_info() {
+    echo "=== System Information ==="
+
+    if ! uname -srm; then
+        echo "Error: Unable to read system information." >&2
+        return 1
+    fi
+
+    echo
+    echo "Hostname: $(hostname)" || return 1
+
+    echo
+    echo "Uptime:"
+    if ! uptime; then
+        echo "Error: Unable to read uptime." >&2
+        return 1
+    fi
+
+    echo
+    echo "Memory Information:"
+    if ! free -h; then
+        echo "Error: Unable to read memory information." >&2
+        return 1
+    fi
+}
+
+network_check() {
+    local host="$1"
+
+    if [[ -z "$host" || "$host" == -* ]]; then
+        echo "Error: A valid host argument is required." >&2
+        return 2
+    fi
+
+    echo "Checking network connectivity to: $host"
+
+    if ping -c 1 -W 3 "$host" >/dev/null 2>&1; then
+        echo "Success: $host is reachable."
+        return 0
+    else
+        echo "Error: $host is unreachable." >&2
+        return 1
+    fi
+}
+
+disk_info() {
+    echo "=== Disk Usage Information ==="
+
+    if ! df -h; then
+        echo "Error: Unable to read disk information." >&2
+        return 1
+    fi
+}
+
+if [[ $# -eq 0 ]]; then
+    echo "Error: No command provided." >&2
+    show_help >&2
+    exit 2
+fi
+
+command_name="$1"
+shift
+
+case "$command_name" in
+    system)
+        if [[ $# -ne 0 ]]; then
+            echo "Error: system takes no arguments." >&2
+            exit 2
+        fi
+        system_info
+        exit $?
+        ;;
+
+    network)
+        if [[ $# -ne 1 ]]; then
+            echo "Error: network requires exactly one host." >&2
+            show_help >&2
+            exit 2
+        fi
+        network_check "$1"
+        exit $?
+        ;;
+
+    disk)
+        if [[ $# -ne 0 ]]; then
+            echo "Error: disk takes no arguments." >&2
+            exit 2
+        fi
+        disk_info
+        exit $?
+        ;;
+
+    help)
+        if [[ $# -ne 0 ]]; then
+            echo "Error: help takes no arguments." >&2
+            exit 2
+        fi
+        show_help
+        exit 0
+        ;;
+
+    *)
+        echo "Error: Invalid command '$command_name'." >&2
+        show_help >&2
+        exit 2
+        ;;
+esac
+
